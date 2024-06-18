@@ -1,0 +1,353 @@
+#
+# Counts kills per life, in total, and the kill streak.
+# This Skript was made my TCPT on SpigotMC and updated by not_3than on SpigotMC
+
+# Permission Nodes:
+# Users need - killcounter.user
+# Admins need - killcounter.admin, killcounter.seeKS
+# Note: The seeKS permission is if you want them to see the targeted player's killstreak (by default, you can't)
+# If you do not want the killstreak to show in the xp bar, remove 
+# "execute console command "xp give %attacker% 1L"" from the on death code.
+
+on load:
+	set {killcounter.Prefix} to "&8[&eServerName&8]"
+	delete {versionno}
+	set {versionno} to 2.5
+
+on join:
+	if {kill counter.%player's uuid%.kdr_total} is not set:
+		set {kill counter.%player's uuid%.kills_session} to 0
+		set {kill counter.%player's uuid%.kills_total} to 0
+		set {kill counter.%player's uuid%.deaths_total} to 0
+		set {kill counter.%player's uuid%.kdr_total} to 0
+
+on death:
+	attacker is a player
+	add 1 to {kill counter.%attacker's uuid%.kills_total}
+	add 1 to {kill counter.%attacker's uuid%.kills_session}
+	set {kill counter.%attacker's uuid%.kdr_total} to {kill counter.%attacker's uuid%.kills_total} / {kill counter.%attacker's uuid%.deaths_total}
+	apply regeneration 2 to attacker for 5 seconds
+	execute console command "xp give %attacker% 1L"
+	{kill counter.%attacker's uuid%.kills_session} is greater than {kill counter.%attacker's uuid%.kills_session_max}:
+		set {kill counter.%attacker's uuid%.kills_session_max} to {kill counter.%attacker's uuid%.kills_session}
+	if {kill counter.%attacker's uuid%.kills_session} = 5:
+		broadcast "%{killcounter.Prefix}% &c&l%attacker% &6has just reached a killstreak of &c5&6!"
+	if {kill counter.%attacker's uuid%.kills_session} = 10:
+		broadcast "%{killcounter.Prefix}% &c&l%attacker% &6has just reached a killstreak of &c10&6!"
+	if {kill counter.%attacker's uuid%.kills_session} = 15:
+		broadcast "%{killcounter.Prefix}% &c&l%attacker% &6has just reached a killstreak of &c15&6!"
+	if {kill counter.%attacker's uuid%.kills_session} = 25:
+		broadcast "%{killcounter.Prefix}% &c&l%attacker% &6has just reached a killstreak of &c25&6!"
+	if {kill counter.%attacker's uuid%.kills_session} = 50:
+		broadcast "%{killcounter.Prefix}% &c&l%attacker% &6has just reached a killstreak of &c50&6!"
+	if {kill counter.%attacker's uuid%.kills_total} = 200:
+		execute console command "INSERT REWARD COMMAND"
+		broadcast "%{killcounter.Prefix}% &c&l%attacker% &fhas just reached a total of &6200 &fkills and earned &bReward!"
+	if {kill counter.%attacker's uuid%.kills_total} = 500:
+		execute console command "INSERT REWARD COMMAND"
+		broadcast "%{killcounter.Prefix}% &c&l%attacker% &fhas just reached a total of &6500 &fkills and earned &6Reward!"
+	if {kill counter.%attacker's uuid%.kills_total} = 1000:
+		execute console command "INSERT REWARD COMMAND"
+		broadcast "%{killcounter.Prefix}% &c&l%attacker% &fhas just reached a total of &61000 &fkills and earned &5Reward!"
+	if {kill counter.%attacker's uuid%.kills_total} = 2000:
+		execute console command "INSERT REWARD COMMAND"
+		broadcast "%{killcounter.Prefix}% &c&l%attacker% &fhas just reached a total of &62000 &fkills and earned &4Reward!"
+	wait 5 ticks
+	send "&a+1 Kill" to attacker
+
+on death of player:
+	wait 5 ticks
+	add 1 to {kill counter.%player's uuid%.deaths_total}
+	set {kill counter.%player's uuid%.kdr_total} to {kill counter.%player's uuid%.kills_total} / {kill counter.%player's uuid%.deaths_total}
+	set {kill counter.%player's uuid%.kills_session} to 0
+	set death message to ""
+
+on respawn:
+	player has permission "respawn.use"
+	wait 5 ticks
+	execute console command "/minecraft:xp add %player% -1000 levels"
+
+command /kills [<offlineplayer>]:
+	aliases: deaths, stats, statistics, playerinfo
+	permission: killcounter.user
+	trigger:
+		if arg-1 is not set:
+			message "&8&m----------------------------------------------------"
+			message "&r"
+			message "&c&l%player%&c's &7Stats"
+			message "&aKills - &e&l%{kill counter.%player's uuid%.kills_total}%"
+			message "&aDeaths - &e&l%{kill counter.%player's uuid%.deaths_total}%"
+			message "&aKillstreak - &e&l%{kill counter.%player's uuid%.kills_session}% &7(Only visible to you)"
+			message "&aKDR - &e&l%{kill counter.%player's uuid%.kdr_total}%"
+			message "&r"
+			message "&8&m----------------------------------------------------"
+		if arg-1 is set:
+			if sender has permission "killcounter.seeKS":
+				message "&8&m----------------------------------------------------"
+				message "&r"
+				message "&c&l%arg-1%&c's &7Stats"
+				message "&aKills - &e&l%{kill counter.%arg-1's uuid%.kills_total}%"
+				message "&aDeaths - &e&l%{kill counter.%arg-1's uuid%.deaths_total}%"
+				message "&aKillstreak - &e&l%{kill counter.%arg-1's uuid%.kills_session}%"
+				message "&aKDR - &e&l%{kill counter.%arg-1's uuid%.kdr_total}%"
+				message "&r"
+				message "&8&m----------------------------------------------------"
+			else:
+				message "&8&m----------------------------------------------------"
+				message "&r"
+				message "&c&l%arg-1%&c's &7Stats"
+				message "&aKills - &e&l%{kill counter.%arg-1's uuid%.kills_total}%"
+				message "&aDeaths - &e&l%{kill counter.%arg-1's uuid%.deaths_total}%"
+				message "&aKDR - &e&l%{kill counter.%arg-1's uuid%.kdr_total}%"
+				message "&r"
+				message "&8&m----------------------------------------------------"
+
+command /resetstats:
+	permission: killcounter.admin
+	trigger:
+		message "&r"
+		message "&3Are you sure? &cThis CANNOT be undone!"
+		message "&3Type &b/rsc &3If you are sure!"
+		message "&r"
+		stop
+
+command /rsc:
+	permission: killcounter.admin
+	trigger:
+		message "&r"
+		message "&aSuccessfully reset %player%'s Stats!"
+		message "&r"
+		set {kill counter.%player's uuid%.kills_session} to 0
+		set {kill counter.%player's uuid%.kills_session_max} to 0
+		set {kill counter.%player's uuid%.kills_total} to 0
+		set {kill counter.%player's uuid%.deaths_total} to 0
+		set {kill counter.%player's uuid%.kdr_total} to 0
+
+command /killcounter:
+	executable by: players
+	trigger:
+		if player has permission "KillCounter.admin":
+			message "&8&m[-------------]&r &c&lKillCounter &8&m[-------------]"
+			message "&r"
+			message "&3/kills &8&l> &bView Your Kill Stats! [Kills, Deaths, KDR]"
+			message "&3/resetstats &8&l> &bReset Your PvPKills! &c[Cannot Be Undone!]"
+			message "&3/killcounter &8&l> &bShows this! [Need Help?]"
+			message "&3/kcc &8&l> &bShows the Credits. [Settings]"
+			message "&4/kca &8&l> &cShows the Admin Menu. [Settings]"
+			message "&r"
+			message "&8&m[-------------------------------------------]"
+			stop
+		else:
+			message "&8&m[-------------]&r &c&lKillCounter &8&m[-------------]"
+			message "&r"
+			message "&3/kills &8&l> &bView Your Kill Stats! [Kills, Deaths, KDR]"
+			message "&3/resetstats &8&l> &bReset Your PvPKills! &c[Cannot Be Undone!]"
+			message "&3/killcounter &8&l> &bShows this! [Need Help?]"
+			message "&3/kcc &8&l> &bShows the Credits. [Settings]"
+			message "&r"
+			message "&8&m[-------------------------------------------]"
+			stop
+		
+command /kca [<text>] [<text>] [<text>] [<integer>]:
+	trigger:
+		if player has permission "KillCounter.admin":
+			if arg-1 is set:
+				if arg-1 is "reset":
+					if arg-2 is set:
+						if arg-2 is "kills":
+							if arg-3 is set:
+								set {kill counter.%arg-4's uuid%.kills_total} to 0
+								set {kill counter.%arg-4's uuid%.kills_session} to 0
+								set {kill counter.%arg-4's uuid%.kills_session_max} to 0
+								message "&r"
+								message "&aSuccessfully reset &e%arg-3%&a's kills!"
+								message "&r"
+								stop
+							else:
+								message "&r"
+								message "&cYou need to provide a player for this to execute on!"
+								message "&r"
+								stop
+						if arg-2 is "deaths":
+							if arg-3 is set:
+								set {kill counter.%arg-4's uuid%.deaths_total} to 0
+								message "&aSuccessfully reset &e%arg-3%&a's deaths!"
+								stop
+							else:
+								message "&r"
+								message "&cYou need to provide a player for this to execute on!"
+								message "&r"
+								stop
+					else:
+						message "&r"
+						message "&cYou need to select which kind of stat you want this to apply to!"
+						message "&r"
+						stop
+				if arg-1 is "set":
+					if arg-2 is set:
+						if arg-2 is "kills":
+							if arg-3 is set:
+								if arg-4 is set:
+									set {kill counter.%arg-4's uuid%.kills_total} to arg-4
+									set {kill counter.%arg-4's uuid%.kills_session} to arg-4
+									set {kill counter.%arg-4's uuid%.kills_session_max} to arg-4
+									message "&r"
+									message "&aSuccessfully set &e%arg-3%&a's kills to &e%arg-4%"
+									message "&r"
+									stop
+								else:
+									message "&r"
+									message "&cYou need to provide a number for the kills to be set to!"
+									message "&r"
+									stop
+							else:
+								message "&r"
+								message "&cYou need to provide a player for this to execute on!"
+								message "&r"
+								stop
+						if arg-2 is "deaths":
+							if arg-3 is set:
+								if arg-4 is set:
+									set {kill counter.%arg-4's uuid%.deaths_total} to arg-4
+									message "&r"
+									message "&aSuccessfully set &e%arg-3%&a's deaths to &e%arg-4%"
+									message "&r"
+									stop
+								else:
+									message "&r"
+									message "&cYou need to provide a number for the deaths to be set to!"
+									message "&r"
+									stop
+							else:
+								message "&r"
+								message "&cYou need to provide a player for this to execute on!"
+								message "&r"
+								stop
+						if arg-2 is "kdr":
+							if arg-3 is set:
+								if arg-4 is set:
+									set {kill counter.%arg-4's uuid%.kdr_total} to arg-4
+									message "&r"
+									message "&aSuccessfully set &e%arg-3%&a's KDR to &e%arg-4%"
+									message "&r"
+									stop
+								else:
+									message "&r"
+									message "&cYou need to provide a number for the KDR to be set to!"
+									message "&r"
+									stop
+							else:
+								message "&r"
+								message "&cYou need to provide a player for this to execute on!"
+								message "&r"
+								stop
+						else:
+							message "&r"
+							message "&cYou need to select which kind of stat you want this to apply to!"
+							message "&r"
+							stop
+				if arg-1 is "reload":
+					execute console command "sk reload kill counter"
+					stop
+				else:
+					message "&cUnknown process. Please use either &4&lreset &cor &4&lset&c."
+					stop
+			else:
+				message "&8&m[-----------]&r &c&lKillCounter &c&lAdmin &8&m[-----------]"
+				message "&r"
+				message "&3/kca &breload &8&l> &bReload the Skript!"
+				message "&3/kca &breset &7<kills/deaths> <player> &8&l> &bReset a Player's certain stat!"
+				message "&3/kca &bset &7<kills/deaths/kdr> <player> <integer> &8&l> &bSet a Player's certain stat!"
+				message "&7Setting/Resetting KDR is pretty much pointless because it changes every kill/death."
+				message "&r"
+				message "&c&lWarning: &cThese changes are permanent and cannot be undone!"
+				message "&8&m[-------------------------------------------]"
+				stop
+		else:
+			message "&r"
+			message "&cYou do not have permission to run this command!"
+			message "&r"
+			stop
+			
+command /kcc:
+	trigger:
+		message "&8&m[-----------]&r &c&lKillCounter &c&lCredits &8&m[-----------]"
+		message "&r"
+		message "&aThis Skript was Developed by: &e&lTCPT &eon SpigotMC."
+		message "&aThis Skript was updated/fixed by: &e&lnot_3than&e##8192."
+		message "&r"
+		message "&8&m[-------------------------------------------]"
+		stop
+		
+on load:
+	loop all players:
+		if loop-player has permission "KillCounter.admin":
+			send "&8[&aKillCounter&8]: &aReloaded." to loop-player
+			
+on unload:
+	loop all players:
+		if loop-player has permission "KillCounter.admin":
+			send "&8[&aKillCounter&8]: &aReloading.." to loop-player
+			
+command /kcversion:
+	trigger:
+		message "&r"
+		message "&eKillCounter &7is running version &a%{versionno}%&7."
+		message "&r"
+		stop
+		
+#  -----------------------------------------------------------------
+#                    KillsTop
+#  -----------------------------------------------------------------
+
+on connect:
+	set {killtop.kills::%player's uuid%} to {kill counter.%player's uuid%.kills_total}
+
+On death of a player:
+	if attacker is a player:
+		add 1 to {killtop.kills::%attacker's uuid%}
+		stop
+
+command /topkills:
+	trigger:
+		loop {killtop.kills::*}:
+			add 1 to {_size}
+			if {_low.to.high.list::%loop-value%} is not set:
+				set {_low.to.high.list::%loop-value%} to loop-index
+			else:
+				set {_n} to 0
+				loop {_size} times:
+					set {_n} to {_n}+1
+					{_low.to.high.list::%loop-value-1%.%{_n}%} is not set
+					set {_low.to.high.list::%loop-value-1%.%{_n}%} to loop-index
+					stop loop
+		wait 1 tick
+		set {_n} to size of {_low.to.high.list::*}
+		loop {_low.to.high.list::*}:
+			set {_high.to.low.list::%{_n}%} to loop-value
+			set {_n} to {_n}-1
+		wait 1 tick
+		send "&8&m----------------------------------------------------"
+		send "     &4&lTop Kills&7*     "
+		send " "
+		loop {_high.to.low.list::*}:
+			add 1 to {_result}
+			send "&c&l%{_result}%&c. &a%loop-value parsed as an offline player% &8- &e%{killtop.kills::%loop-value%}% Kills" to player
+			if {_result} is 5:
+				send " "
+				send "&7* This only shows top killers that have logged on since [insert date since last reset]"
+				send "&8&m----------------------------------------------------"
+				stop
+		send " &c Uh oh! It doesn't look like anyone is on here!"
+		send " "
+		send "&7* This only shows top killers that have logged on since [insert date since last reset]"
+		send "&8&m----------------------------------------------------"
+			
+command /resettopkills:
+	permission: reset.topkills
+	trigger:
+		delete {killtop.kills::*}
+		delete {_high.to.low.list::*}
+		delete {_size}
+		delete {_n}
+		delete {_high.to.low.list::%{_n}%}
